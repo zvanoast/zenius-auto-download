@@ -1,6 +1,7 @@
 config.json
 state.json
 test_downloads/
+.claude/
 
 __pycache__/
 *.pyc
