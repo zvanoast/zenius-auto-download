@@ -34,32 +34,41 @@ pip install -e .
 
 ## Setup
 
-1. Copy the example config:
+Run the interactive setup wizard to pick your games and configure your Songs folder:
 
-   ```bash
-   cp config.example.json config.json
-   ```
+```bash
+zenius-update --init
+```
 
-2. Open `config.json` and set `download_dir` to your Stepmania Songs folder:
+This fetches the list of official DDR/Dance Stage releases from Zenius, lets you select which ones to sync, and writes `config.json` for you.
 
-   ```json
-   {
-     "category_urls": [
-       "https://zenius-i-vanisher.com/v5.2/viewsimfilecategory.php?categoryid=1709"
-     ],
-     "download_dir": "C:/Games/StepMania 5/Songs",
-     "delay_seconds": 2.0,
-     "skip_videos": false
-   }
-   ```
+Alternatively, copy and edit the config manually:
 
-   > Run `zenius-update` from the same folder as your `config.json`.
+```bash
+cp config.example.json config.json
+```
+
+```json
+{
+  "category_urls": [
+    "https://zenius-i-vanisher.com/v5.2/viewsimfilecategory.php?categoryid=1709"
+  ],
+  "download_dir": "C:/Games/StepMania 5/Songs",
+  "delay_seconds": 2.0,
+  "skip_videos": false
+}
+```
+
+> Run `zenius-update` from the same folder as your `config.json`.
 
 ---
 
 ## Usage
 
 ```bash
+# First-time setup: pick your games interactively
+zenius-update --init
+
 # Download all new simfiles
 zenius-update
 

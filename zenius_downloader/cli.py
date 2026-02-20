@@ -58,6 +58,8 @@ def main() -> None:
         prog="zenius-update",
         description="Sync new DDR simfiles from Zenius-I-Vanisher to your Stepmania Songs folder.",
     )
+    parser.add_argument("--init", action="store_true",
+                        help="Run interactive setup to configure categories and download folder")
     parser.add_argument("--dry-run", action="store_true",
                         help="Show what would be downloaded without downloading anything")
     parser.add_argument("--list", action="store_true",
@@ -65,6 +67,11 @@ def main() -> None:
     parser.add_argument("--force-id", metavar="ID",
                         help="Force re-download a specific simfile ID (ignores state)")
     args = parser.parse_args()
+
+    if args.init:
+        from .setup import run_setup
+        run_setup()
+        return
 
     config = load_config()
 
