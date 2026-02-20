@@ -48,7 +48,8 @@ pip install -e .
        "https://zenius-i-vanisher.com/v5.2/viewsimfilecategory.php?categoryid=1709"
      ],
      "download_dir": "C:/Games/StepMania 5/Songs",
-     "delay_seconds": 2.0
+     "delay_seconds": 2.0,
+     "skip_videos": false
    }
    ```
 
@@ -81,6 +82,7 @@ zenius-update --force-id 63195
 | `category_urls` | List of Zenius category page URLs to sync | DDR WORLD category |
 | `download_dir` | Path to your Stepmania Songs folder | *(required)* |
 | `delay_seconds` | Pause between downloads (be polite to the server) | `2.0` |
+| `skip_videos` | Skip `.avi` video files when extracting ZIPs | `false` |
 
 To sync multiple categories, add more URLs to the `category_urls` list:
 

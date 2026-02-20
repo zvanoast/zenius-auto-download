@@ -80,12 +80,13 @@ def main() -> None:
     downloaded: dict = state.setdefault("downloaded", {})
     session = build_session()
     delay: float = config.get("delay_seconds", 2.0)
+    skip_videos: bool = config.get("skip_videos", False)
 
     # --force-id: bypass state and download a single specific simfile
     if args.force_id:
         simfile_id = args.force_id.strip()
         print(f"Force-downloading simfile ID {simfile_id}...")
-        ok = download_and_extract(simfile_id, f"simfile_{simfile_id}", download_dir, session, delay)
+        ok = download_and_extract(simfile_id, f"simfile_{simfile_id}", download_dir, session, delay, skip_videos)
         if ok:
             downloaded[simfile_id] = {
                 "name": f"simfile_{simfile_id}",
@@ -126,7 +127,7 @@ def main() -> None:
     success = 0
     failed = 0
     for simfile_id, song_name in new_simfiles:
-        ok = download_and_extract(simfile_id, song_name, download_dir, session, delay)
+        ok = download_and_extract(simfile_id, song_name, download_dir, session, delay, skip_videos)
         if ok:
             downloaded[simfile_id] = {
                 "name": song_name,

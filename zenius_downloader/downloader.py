@@ -20,6 +20,7 @@ def download_and_extract(
     download_dir: Path,
     session: requests.Session,
     delay: float = 2.0,
+    skip_videos: bool = False,
 ) -> bool:
     """
     Download the ZIP for a simfile, extract it into download_dir, delete the ZIP.
@@ -42,10 +43,15 @@ def download_and_extract(
         print(f"    Downloaded {size_kb} KB")
 
         with zipfile.ZipFile(tmp_path, "r") as z:
-            z.extractall(download_dir)
+            members = [m for m in z.namelist()
+                       if not (skip_videos and m.lower().endswith(".avi"))]
+            z.extractall(download_dir, members=members)
         tmp_path.unlink()
 
-        print(f"    Extracted to: {download_dir}")
+        if skip_videos:
+            print(f"    Extracted to: {download_dir} (videos skipped)")
+        else:
+            print(f"    Extracted to: {download_dir}")
         time.sleep(delay)
         return True
 

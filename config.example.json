@@ -3,5 +3,6 @@
     "https://zenius-i-vanisher.com/v5.2/viewsimfilecategory.php?categoryid=1709"
   ],
   "download_dir": "C:/Games/StepMania 5/Songs",
-  "delay_seconds": 2.0
+  "delay_seconds": 2.0,
+  "skip_videos": false
 }
