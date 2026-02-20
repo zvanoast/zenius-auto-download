@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zenius-downloader"
+version = "0.1.0"
+description = "Automatically sync new DDR simfiles from Zenius-I-Vanisher to your local Stepmania Songs folder"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+dependencies = [
+    "requests>=2.31.0",
+    "beautifulsoup4>=4.12.0",
+    "lxml>=5.0.0",
+]
+
+[project.scripts]
+zenius-update = "zenius_downloader.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["zenius_downloader*"]

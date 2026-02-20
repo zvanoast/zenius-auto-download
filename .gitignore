@@ -1,0 +1,14 @@
+config.json
+state.json
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
