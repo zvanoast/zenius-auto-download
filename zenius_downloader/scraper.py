@@ -35,9 +35,9 @@ def get_categories(session: requests.Session) -> list[tuple[str, str]]:
     return results
 
 
-def get_simfiles(url: str, session: requests.Session) -> list[tuple[str, str]]:
+def get_simfiles(url: str, session: requests.Session) -> tuple[str, list[tuple[str, str]]]:
     """
-    Scrape a Zenius category page and return (simfile_id, song_name) pairs.
+    Scrape a Zenius category page and return (category_name, [(simfile_id, song_name), ...]).
     Results are deduplicated and preserve page order.
     """
     print(f"Fetching: {url}")
@@ -45,6 +45,19 @@ def get_simfiles(url: str, session: requests.Session) -> list[tuple[str, str]]:
     resp.raise_for_status()
 
     soup = BeautifulSoup(resp.text, "lxml")
+
+    # Derive the game name from the page heading, falling back to title then URL
+    category_name = ""
+    h1 = soup.find("h1")
+    if h1:
+        category_name = h1.get_text(strip=True)
+    if not category_name:
+        title_tag = soup.find("title")
+        if title_tag:
+            category_name = title_tag.get_text(strip=True).split(" - ")[0].strip()
+    if not category_name:
+        m = _CATEGORY_ID_RE.search(url)
+        category_name = f"Category_{m.group(1)}" if m else "Unknown"
 
     seen: set[str] = set()
     simfiles: list[tuple[str, str]] = []
@@ -59,4 +72,4 @@ def get_simfiles(url: str, session: requests.Session) -> list[tuple[str, str]]:
         seen.add(simfile_id)
         simfiles.append((simfile_id, a.get_text(strip=True)))
 
-    return simfiles
+    return category_name, simfiles

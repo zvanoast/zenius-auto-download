@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 import tempfile
 import time
@@ -10,7 +12,7 @@ BASE_URL = "https://zenius-i-vanisher.com/v5.2/"
 _CONTENT_DISP_RE = re.compile(r'filename[^;=\n]*=\s*["\']?([^"\';\n]+)')
 
 
-def _sanitize(name: str) -> str:
+def sanitize(name: str) -> str:
     return re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", name).strip()
 
 
@@ -21,10 +23,10 @@ def download_and_extract(
     session: requests.Session,
     delay: float = 2.0,
     skip_videos: bool = False,
-) -> bool:
+) -> str | None:
     """
     Download the ZIP for a simfile, extract it into download_dir, delete the ZIP.
-    Returns True on success, False on any error.
+    Returns the top-level folder name on success, None on any error.
     """
     url = f"{BASE_URL}download.php?type=ddrsimfile&simfileid={simfile_id}"
     print(f"  [{simfile_id}] {song_name}")
@@ -45,6 +47,9 @@ def download_and_extract(
         with zipfile.ZipFile(tmp_path, "r") as z:
             members = [m for m in z.namelist()
                        if not (skip_videos and m.lower().endswith(".avi"))]
+            # Capture the actual top-level folder name before extracting
+            top_dirs = {Path(m).parts[0] for m in z.namelist() if Path(m).parts}
+            folder = next(iter(top_dirs), sanitize(song_name))
             z.extractall(download_dir, members=members)
         tmp_path.unlink()
 
@@ -53,7 +58,7 @@ def download_and_extract(
         else:
             print(f"    Extracted to: {download_dir}")
         time.sleep(delay)
-        return True
+        return folder
 
     except requests.HTTPError as e:
         print(f"    HTTP error: {e}")
@@ -66,4 +71,4 @@ def download_and_extract(
         if "tmp_path" in dir() and tmp_path.exists():
             tmp_path.unlink()
 
-    return False
+    return None
