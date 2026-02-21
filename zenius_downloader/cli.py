@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import argparse
 import json
 import shutil
 import time
+from datetime import datetime
 from pathlib import Path
 
 import requests
@@ -99,15 +102,15 @@ def _update_snapshot(state: dict, category_name: str, folder: str) -> None:
     snap[category_name] = sorted(snap_set)
 
 
-def collect_simfiles(config: dict, session: requests.Session) -> list[tuple[str, str, str]]:
+def collect_simfiles(config: dict, session: requests.Session) -> list[tuple[str, str, str, "datetime | None"]]:
     seen: set[str] = set()
-    results: list[tuple[str, str, str]] = []
+    results: list[tuple[str, str, str, "datetime | None"]] = []
     for url in config.get("category_urls", []):
         category_name, simfiles = get_simfiles(url, session)
-        for sid, name in simfiles:
+        for sid, name, zenius_updated_at in simfiles:
             if sid not in seen:
                 seen.add(sid)
-                results.append((sid, name, category_name))
+                results.append((sid, name, category_name, zenius_updated_at))
     return results
 
 
@@ -177,37 +180,62 @@ def main() -> None:
 
     all_simfiles = collect_simfiles(config, session)
 
+    # Determine which simfiles need updating (Zenius date newer than local downloaded_at)
+    def _is_update(sid: str, zenius_updated_at) -> bool:
+        if zenius_updated_at is None or sid not in downloaded:
+            return False
+        try:
+            local_dt = datetime.strptime(downloaded[sid]["downloaded_at"], "%Y-%m-%d %H:%M:%S")
+        except (KeyError, ValueError):
+            return False
+        return zenius_updated_at > local_dt
+
     if args.list:
         print(f"\n{'ID':<10} {'Status':<14} {'Category':<30} Song")
         print("-" * 80)
-        for sid, name, category_name in all_simfiles:
-            status = "downloaded" if sid in downloaded else "NEW"
+        for sid, name, category_name, zenius_updated_at in all_simfiles:
+            if sid not in downloaded:
+                status = "NEW"
+            elif _is_update(sid, zenius_updated_at):
+                status = "UPDATE"
+            else:
+                status = "downloaded"
             print(f"{sid:<10} {status:<14} {category_name:<30} {name}")
-        print(f"\nTotal: {len(all_simfiles)}  |  Downloaded: {len(downloaded)}  |  New: {sum(1 for s, _, __ in all_simfiles if s not in downloaded)}")
+        n_new = sum(1 for s, _, __, ___ in all_simfiles if s not in downloaded)
+        n_upd = sum(1 for s, _, __, u in all_simfiles if _is_update(s, u))
+        print(f"\nTotal: {len(all_simfiles)}  |  Downloaded: {len(downloaded)}  |  New: {n_new}  |  Updates: {n_upd}")
         return
 
-    new_simfiles = [(sid, name, cat) for sid, name, cat in all_simfiles if sid not in downloaded]
+    new_simfiles = [(sid, name, cat, upd) for sid, name, cat, upd in all_simfiles if sid not in downloaded]
+    update_simfiles = [(sid, name, cat, upd) for sid, name, cat, upd in all_simfiles if _is_update(sid, upd)]
 
     print(f"\nOn site   : {len(all_simfiles)}")
     print(f"Have      : {len(downloaded)}")
     print(f"New       : {len(new_simfiles)}")
+    print(f"Updates   : {len(update_simfiles)}")
 
-    if not new_simfiles:
+    if not new_simfiles and not update_simfiles:
         print("\nAll up to date.")
         return
 
     if args.dry_run:
-        print("\nDry run -- would download:")
-        for sid, name, category_name in new_simfiles:
-            print(f"  [{sid}] {category_name} / {name}")
+        if new_simfiles:
+            print("\nDry run -- would download (new):")
+            for sid, name, category_name, _ in new_simfiles:
+                print(f"  [{sid}] {category_name} / {name}")
+        if update_simfiles:
+            print("\nDry run -- would re-download (updates):")
+            for sid, name, category_name, _ in update_simfiles:
+                print(f"  [{sid}] {category_name} / {name}")
         return
-
-    print(f"\nDownloading {len(new_simfiles)} new simfile(s)...\n")
 
     success = 0
     skipped = 0
     failed = 0
-    for simfile_id, song_name, category_name in new_simfiles:
+
+    if new_simfiles:
+        print(f"\nDownloading {len(new_simfiles)} new simfile(s)...\n")
+    for simfile_id, song_name, category_name, _ in new_simfiles:
         game_dir = download_dir / sanitize(category_name)
         game_dir.mkdir(parents=True, exist_ok=True)
 
@@ -226,6 +254,26 @@ def main() -> None:
             skipped += 1
             continue
 
+        folder = download_and_extract(simfile_id, song_name, game_dir, session, delay, skip_videos)
+        if folder is not None:
+            _update_snapshot(state, category_name, folder)
+            downloaded[simfile_id] = {
+                "name": song_name,
+                "category": category_name,
+                "folder": folder,
+                "downloaded_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+            }
+            save_state(state)
+            success += 1
+        else:
+            failed += 1
+
+    if update_simfiles:
+        print(f"\nRe-downloading {len(update_simfiles)} updated simfile(s)...\n")
+    for simfile_id, song_name, category_name, _ in update_simfiles:
+        game_dir = download_dir / sanitize(category_name)
+        game_dir.mkdir(parents=True, exist_ok=True)
+        print(f"  [{simfile_id}] {song_name} -- UPDATE")
         folder = download_and_extract(simfile_id, song_name, game_dir, session, delay, skip_videos)
         if folder is not None:
             _update_snapshot(state, category_name, folder)
