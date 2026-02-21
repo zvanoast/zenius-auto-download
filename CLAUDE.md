@@ -70,3 +70,26 @@ Entry point defined in `pyproject.toml`: `zenius-update = "zenius_downloader.cli
 - Category list: `simfiles.php?category=latest-official` / `top-official`
 - Category page: `viewsimfilecategory.php?categoryid={ID}`
 - Download: `download.php?type=ddrsimfile&simfileid={ID}`
+
+## Publishing to PyPI
+
+Every PyPI release requires a version bump in `pyproject.toml`. Default to incrementing the
+**minor** version (e.g. `0.2.0` → `0.3.0`); use the **major** version only for breaking changes.
+
+```bash
+# 1. Bump version in pyproject.toml, commit, and push
+
+# 2. Build
+pip install build twine   # one-time setup
+python -m build           # produces dist/
+
+# 3. Upload
+twine upload dist/*       # prompts for credentials, or uses ~/.pypirc
+```
+
+`~/.pypirc` for token-based auth (recommended):
+```ini
+[pypi]
+username = __token__
+password = pypi-YOUR_TOKEN_HERE
+```

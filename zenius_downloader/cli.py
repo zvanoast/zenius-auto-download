@@ -232,6 +232,8 @@ def main() -> None:
     success = 0
     skipped = 0
     failed = 0
+    done = 0
+    total = len(new_simfiles) + len(update_simfiles)
 
     if new_simfiles:
         print(f"\nDownloading {len(new_simfiles)} new simfile(s)...\n")
@@ -252,21 +254,23 @@ def main() -> None:
             }
             save_state(state)
             skipped += 1
-            continue
-
-        folder = download_and_extract(simfile_id, song_name, game_dir, session, delay, skip_videos)
-        if folder is not None:
-            _update_snapshot(state, category_name, folder)
-            downloaded[simfile_id] = {
-                "name": song_name,
-                "category": category_name,
-                "folder": folder,
-                "downloaded_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-            }
-            save_state(state)
-            success += 1
         else:
-            failed += 1
+            folder = download_and_extract(simfile_id, song_name, game_dir, session, delay, skip_videos)
+            if folder is not None:
+                _update_snapshot(state, category_name, folder)
+                downloaded[simfile_id] = {
+                    "name": song_name,
+                    "category": category_name,
+                    "folder": folder,
+                    "downloaded_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                }
+                save_state(state)
+                success += 1
+            else:
+                failed += 1
+
+        done += 1
+        print(f"  [{done}/{total}] {done * 100 // total}%\n")
 
     if update_simfiles:
         print(f"\nRe-downloading {len(update_simfiles)} updated simfile(s)...\n")
@@ -287,6 +291,9 @@ def main() -> None:
             success += 1
         else:
             failed += 1
+
+        done += 1
+        print(f"  [{done}/{total}] {done * 100 // total}%\n")
 
     parts = [f"{success} downloaded"]
     if skipped:
