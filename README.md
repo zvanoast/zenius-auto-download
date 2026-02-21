@@ -141,3 +141,11 @@ Add a line to run daily at 9am:
 **"Bad ZIP" error** — Some files on Zenius may require a logged-in account to download. Login support is planned for a future version.
 
 **Songs folder not updating** — Make sure `download_dir` in `config.json` points to the correct Stepmania `Songs/` subfolder, not the Stepmania root.
+
+**`zenius-update` is not recognized** — Python's Scripts folder isn't in your PATH. Either add it (find it with `py -c "import sysconfig; print(sysconfig.get_path('scripts'))"`), or use the module form instead:
+
+```bash
+py -m zenius_downloader --init
+py -m zenius_downloader
+py -m zenius_downloader --dry-run
+```
